@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Salt Manager</title>
+        <link rel="stylesheet" href="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.css">
+        <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+        <script src="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.js"></script>
+        <script src="static/handlebars-v1.1.2.js"></script>
+        <script src="static/main.js"></script>
+    </head>
+    <body>
+        <div data-role="page" id="mainmenu">
+            <div data-role="header">
+                <b>Salt Manager - Menu</b>
+            </div>
+            <div data-role="content">
+                <ul data-role="listview">
+                    <li><a href="#minions">Minions</a></li>
+                    <li><a href="#keys">Keys</a></li>
+                </ul>
+            </div>
+
+            <div data-role="footer">
+            </div>
+        </div>
+
+        <div data-role="page" id="minions">
+            <div data-role="header">
+                <b>Salt Manager - Minions</b>
+            </div>
+            <div data-role="content">
+                <div data-role="collapsible-set" id="minionlist">
+                    <h3>Loading, please wait...</h3>
+                </div>
+            </div>
+            <div data-role="footer">
+            </div>
+        </div>
+
+        <div data-role="page" id="keys">
+            <div data-role="header">
+                <b>Salt Manager - Keys</b>
+            </div>
+            <div data-role="content">
+                <b>Unaccepted Keys</b>
+                <div data-role="collapsible-set" id="keys-unaccepted">
+                    <h3>Loading, please wait...</h3>
+                </div>
+                <b>Accepted Keys</b>
+                <div data-role="collapsible-set" id="keys-accepted">
+                </div>
+            </div>
+            <div data-role="footer">
+            </div>
+        </div>
+
+        <div data-role="dialog" id="command-dialog">
+            <div data-role="header">
+                <b>Command sent successfully</b>
+            </div>
+            <div data-role="content">
+                <p><b>Command has been sent successfully</b></p>
+                <div data-role="collapsible">
+                    <h3>Command result:</h3>
+                    <p><span style="font-family: monospace" id="#command-dialog-result"></p>
+                </div>
+            </div>
+            <div data-role="footer">
+            </div>
+        </div>
+
+        <div data-role="dialog" id="error-dialog">
+            <div data-role="header">
+                <b>Error!</b>
+            </div>
+            <div data-role="content">
+                <p><b>Something went wrong! Please contact the administrator for help.</b></p>
+                <div data-role="collapsible">
+                    <h3>Error message</h3>
+                    <p><span style="font-family: monospace" id="#error-dialog-message"></p>
+                </div>
+            </div>
+            <div data-role="footer">
+            </div>
+        </div>
+
+
+        <script type="text/x-handlebars-template" id="minion-template">
+            <div data-role="collapsible">
+                <h3>{{hostname}}</h3>
+                {{#if up}}
+                    <p><b>Status: <span style="color: green">Up</span><b></p>
+                {{else}}
+                    <p><b>Status: <span style="color: red">Down</span><b></p>
+                {{/if}}
+                <div data-role="controlgroup">
+                    {{#each quickactions}}
+                    <button onclick="run_command('{{../hostname}}', '{{this.fun}}', [{{#each this.arg}}'{{this}}'{{/each}}]);">{{this.title}}</button>
+                    {{/each}}
+                </div>
+            </div>
+        </script>
+        <script type="text/x-handlebars-template" id="keys-template">
+            <div data-role="collapsible">
+                <h3>{{hostname}}</h3>
+                <div data-role="controlgroup">
+                    {{#unless accepted}}
+                    <button onclick="run_command('', 'wheel.key.accept', ['{{hostname}}']);">Accept Key</button>
+                    {{/unless}}
+                    <button onclick="run_command('', 'wheel.key.reject', ['{{hostname}}']);">Reject Key</button>  
+                    <button onclick="run_command('', 'wheel.key.delete', ['{{hostname}}']);">Delete Key</button>
+                </div>
+            </div>
+        </script>
+    </body>
+</html>
