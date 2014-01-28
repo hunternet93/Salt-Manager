@@ -7,7 +7,7 @@
         <link rel="stylesheet" href="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.css">
         <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
         <script src="http://code.jquery.com/mobile/1.3.2/jquery.mobile-1.3.2.min.js"></script>
-        <script src="static/handlebars-v1.1.2.js"></script>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.3.0/handlebars.min.js"></script>
         <script src="static/main.js"></script>
     </head>
     <body>
@@ -90,11 +90,6 @@
         <script type="text/x-handlebars-template" id="minion-template">
             <div data-role="collapsible">
                 <h3>{{hostname}}</h3>
-                {{#if up}}
-                    <p><b>Status: <span style="color: green">Up</span><b></p>
-                {{else}}
-                    <p><b>Status: <span style="color: red">Down</span><b></p>
-                {{/if}}
                 <div data-role="controlgroup">
                     {{#each quickactions}}
                     <button onclick="run_command('{{../hostname}}', '{{this.fun}}', [{{#each this.arg}}'{{this}}'{{/each}}]);">{{this.title}}</button>

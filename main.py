@@ -123,14 +123,7 @@ class ListMinions:
         listkeys = app.salt.run({'fun': 'wheel.key.list_all', 'token': user.token})
         minions = listkeys['data']['return']['minions']
 
-        tag = app.salt.run({'fun': 'runner.manage.up', 'token': user.token})['tag']
-        app.salt.get_event(tag=tag)
-        minions_up = app.salt.get_event(tag=tag, wait=10.0)['return']
-
-        minions = [{'hostname': x, 'up': False} for x in minions]
-        for minion in minions[:]:
-            if minion['hostname'] in minions_up:
-                minions[minions.index(minion)]['up'] = True
+        minions = [{'hostname': x} for x in minions]
 
         web.header('Content-Type', 'application/json')
         return json.dumps({'minions': minions})
