@@ -55,13 +55,11 @@ class App:
                 module.app = self
                 module.web = web
 
-                for url in [list(module.urls[i:i+2]) for i in range(0, len(module.urls), 2)]:
-                    url[0] = moduledict['name'] + url[0]
-                    url[1] = 'app.modules.' + moduledict['name'] + '.' + url[1]
-                    self.urls += url
+                self.urls += ['/' + moduledict['name'], module.webapp]
 
             del self.settings['modules']
 
+        print(self.urls)
         print(self.settings)
 
     def add_user(self, username, password):
@@ -90,7 +88,7 @@ class App:
         cookie_id = web.cookies().get('key')
         user = self.check_user(cookie_id)
         if user:
-            web.setcookie('key', user.regen_cookie_id(), self.settings['auth_cookie_expiration'])
+            web.setcookie('key', user.regen_cookie_id(), self.settings['auth_cookie_expiration'], path='/')
             return user
         else:
             return False
@@ -145,7 +143,7 @@ class Login:
         if not user:
             return render.login('Incorrect username or password')
 
-        web.setcookie('key', user.cookie_id, app.settings['auth_cookie_expiration'])
+        web.setcookie('key', user.cookie_id, app.settings['auth_cookie_expiration'], path='/')
         return web.seeother('/')
 
 class Settings:

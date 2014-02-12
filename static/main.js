@@ -46,6 +46,4 @@ $(document).ready(function() {
     $(document).on("pageinit", "#minions", function() { $.get("/ajax/listminions", list_minions); } );
     $(document).on("pageinit", "#keys", function() { $.get("/ajax/listkeys", list_keys); } );
     $(document).on("pageinit", "#modules", function() { $.get("/ajax/listmodules", list_modules); } );
-    
-
 });

@@ -8,9 +8,12 @@ quickactions:
 modules:
     - name: tvremote
       options:
-          slideshow_dir: ~/Photos/
-          local_path: ~/Photos
-          tgt: 'xbian*'
+        slideshow_dir: /home/hunter/Photos/
+        local_path: /home/hunter/Photos
+        tgt: 'tv-*'
+        streams:
+            - title: ProPresenter Stream
+              url: 'http://sshow.ccc.local:8081/camera.ts'
 
 auth_cookie_expiration: 86400
 eauth: pam
