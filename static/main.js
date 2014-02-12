@@ -37,21 +37,7 @@ function list_modules(data, status) {
     $('#moduleslist').listview('refresh');
 }
 
-function run_command(tgt, fun, arg) { $.post('/ajax/runcommand', {'tgt': tgt, 'fun': fun, 'arg': JSON.stringify(arg)}, command_dialog); }
-
-function command_dialog(data, status) {
-    if (typeof data.error != 'undefined') {
-        $('#error-dialog-message').empty();
-        $('#error-dialog-message').text(data.error);
-        $.mobile.changePage('#error-dialog', { role: 'dialog' } );
-    }
-
-    if (typeof data.result != 'undefined') {
-        $('#command-dialog-result').empty();
-        $('#command-dialog-result').text(data.result);    
-        $.mobile.changePage('#command-dialog', { role: 'dialog' } ); 
-    }
-}
+function run_command(tgt, fun, arg) { $.post('/ajax/runcommand', {'tgt': tgt, 'fun': fun, 'arg': JSON.stringify(arg)}) }
 
 function load_settings(data, status) { settings = data; }
 
