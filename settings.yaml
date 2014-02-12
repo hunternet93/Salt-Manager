@@ -1,0 +1,16 @@
+quickactions:
+    - title: Reboot
+      fun: system.reboot
+    - title: Reload
+      fun: service.restart
+      arg: lightdm
+
+modules:
+    - name: tvremote
+      options:
+          slideshow_dir: ~/Photos/
+          local_path: ~/Photos
+          tgt: 'xbian*'
+
+auth_cookie_expiration: 86400
+eauth: pam

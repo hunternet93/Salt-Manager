@@ -1,41 +1,84 @@
-import web, random, salt.client.api, time, json
+import web, random, salt.client.api, time, json, yaml, sys, importlib
 
-urls = (
-    '/', 'Main', 
-    '/login', 'Login',
-    '/ajax/settings', 'Settings',
-    '/ajax/listminions', 'ListMinions',
-    '/ajax/listkeys', 'ListKeys',
-    '/ajax/runcommand', 'RunCommand',
-)
+class Bunch(dict):
+    """This is a basic generic object that the App object will use for named modules, i.e. app.modules.test
+       Copied from: http://code.activestate.com/recipes/52308-the-simple-but-handy-collector-of-a-bunch-of-named/?in=user-97991#c4"""
+    def __init__(self,**kw):
+        dict.__init__(self,kw)
+        self.__dict__ = self
+
 
 class App:
     def __init__(self):
-        self.settings = {"quickactions": [{'title': 'Reboot', 'fun': 'system.reboot', 'arg': []}, {'title': 'Reload', 'fun': 'service.restart', 'arg': ['lightdm']}]}
+        self.urls = [
+            '/', 'Main', 
+            '/login', 'Login',
+            '/ajax/settings', 'Settings',
+            '/ajax/listminions', 'ListMinions',
+            '/ajax/listkeys', 'ListKeys',
+            '/ajax/listmodules', 'ListModules',
+            '/ajax/runcommand', 'RunCommand',
+        ]
+
+        try:
+            settings_file = open('settings.yaml')
+        except IOError:
+            print('settings.yaml file not found, using default settings')
+            self.settings = {'quickactions': []}
+        else:
+            self.settings = yaml.load(settings_file)
+
         self.salt = salt.client.api.APIClient()
         self.users = []
-        self.usersettings = {'expiration': 86400} # This should be from config
 
-        self.auth_method = "salt" # This should be set from the config file eventually
-        if self.auth_method == "salt":
-            self.eauth = "pam" # Also load this from config, can be PAM or LDAP
+        if not self.settings.get('eauth'):
+            print('eauth not specified, defaulting to pam authentication')
+            self.settings['eauth'] = 'pam'
+
+        if not self.settings.get('auth_cookie_expiration'):
+            print('auth_cookie_expiration not set, defaulting to 1200 seconds (1 hour)')
+            self.settings['auth_cookie_expiration'] = 1200
+
+        if self.settings.get('modules'):
+            self.modules = Bunch()
+            sys.path.append('modules/')
+
+            self.settings['options'] = {}
+
+            for moduledict in self.settings['modules']:
+                setattr(self.modules, moduledict['name'], importlib.import_module(moduledict['name']))
+                module = getattr(self.modules, moduledict['name'])
+
+                module.options = moduledict.get('options')
+                self.settings['options'][moduledict['name']] = module.options
+
+                module.app = self
+                module.web = web
+
+                for url in [list(module.urls[i:i+2]) for i in range(0, len(module.urls), 2)]:
+                    url[0] = moduledict['name'] + url[0]
+                    url[1] = 'app.modules.' + moduledict['name'] + '.' + url[1]
+                    self.urls += url
+
+            del self.settings['modules']
+
+        print(self.settings)
 
     def add_user(self, username, password):
-        if self.auth_method == "salt":
-            try:
-                token = self.salt.create_token({'username': username, 'password': password, 'eauth': self.eauth})['token']
-            except salt.exceptions.EauthAuthenticationError:
-                print("Login error for user", username)
-                return False
+        try:
+            token = self.salt.create_token({'username': username, 'password': password, 'eauth': self.settings['eauth']})['token']
+        except salt.exceptions.EauthAuthenticationError:
+            print('Login error for user:', username)
+            return False
 
-            self.users.append(User(username, password, token, self.usersettings))
-            return self.users[-1]
+        self.users.append(User(username, password, token, self.settings))
+        return self.users[-1]
 
     def check_user(self, cookie_id):
         for user in self.users:
             if cookie_id == user.cookie_id:
                 if time.time() < user.expires:
-                    user.expires = time.time() + self.usersettings['expiration']
+                    user.expires = time.time() + int(self.settings['auth_cookie_expiration'])
                     return user
                 else:
                     self.users.remove(user)
@@ -47,7 +90,7 @@ class App:
         cookie_id = web.cookies().get('key')
         user = self.check_user(cookie_id)
         if user:
-            web.setcookie('key', user.regen_cookie_id(), self.usersettings['expiration'])
+            web.setcookie('key', user.regen_cookie_id(), self.settings['auth_cookie_expiration'])
             return user
         else:
             return False
@@ -61,11 +104,11 @@ class App:
             return False
 
 class User:
-    def __init__(self, username, password, token, usersettings):
+    def __init__(self, username, password, token, settings):
         self.username = username
         self.password = password
         self.cookie_id = str(random.randint(1,1000000000))
-        self.expires = time.time() + usersettings['expiration']
+        self.expires = time.time() + int(settings['auth_cookie_expiration'])
         self.token = token
 
     def regen_cookie_id(self):
@@ -102,7 +145,7 @@ class Login:
         if not user:
             return render.login('Incorrect username or password')
 
-        web.setcookie('key', user.cookie_id, app.usersettings['expiration'])
+        web.setcookie('key', user.cookie_id, app.settings['auth_cookie_expiration'])
         return web.seeother('/')
 
 class Settings:
@@ -143,6 +186,18 @@ class ListKeys:
         web.header('Content-Type', 'application/json')
         return json.dumps({'minions': minions, 'minions_unaccepted': minions_unaccepted})
 
+class ListModules:
+    def GET(self):
+        user = app.check_cookie(web)
+        if not user: return web.seeother('/login')
+
+        modules = []
+        for module in app.modules.values():
+            modules.append({'title': module.title, 'url': module.mainpage})
+
+        web.header('Content-Type', 'application/json')
+        return json.dumps(modules)
+
 class RunCommand:
     def POST(self):
         user = app.check_cookie(web)
@@ -154,18 +209,18 @@ class RunCommand:
             print(result)
 
         except KeyError as err:
-            print("RunCommand error:/n" + repr(err))
+            print('RunCommand error:/n' + repr(err))
             return json.dumps({'error': repr(err)})
 
         if result.get('result'): result = result.get('result')
 
         web.header('Content-Type', 'application/json')
-        print("RunCommand result:/n" + str(result))
+        print('RunCommand result:/n' + str(result))
         return json.dumps({'result': str(result)})
 
 
 app = App()
 render = web.template.render('templates/')
-if __name__ == "__main__":
-    webapp = web.application(urls, globals())
+if __name__ == '__main__':
+    webapp = web.application(app.urls, globals())
     webapp.run()
