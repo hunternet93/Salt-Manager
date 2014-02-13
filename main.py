@@ -37,10 +37,6 @@ class App:
             print('eauth not specified, defaulting to pam authentication')
             self.settings['eauth'] = 'pam'
 
-        if not self.settings.get('auth_cookie_expiration'):
-            print('auth_cookie_expiration not set, defaulting to 1200 seconds (1 hour)')
-            self.settings['auth_cookie_expiration'] = 1200
-
         if self.settings.get('modules'):
             self.modules = Bunch()
             sys.path.append('modules/')
@@ -77,12 +73,13 @@ class App:
     def check_user(self, cookie_id):
         for user in self.users:
             if cookie_id == user.cookie_id:
-                if time.time() < user.expires:
-                    user.expires = time.time() + int(self.settings['auth_cookie_expiration'])
-                    return user
-                else:
+                try:
+                    self.salt.verify_token(user.token)
+                except salt.exceptions.EauthAuthenticationError:
                     self.users.remove(user)
                     return False
+                else:
+                    return user
 
         return False
 
@@ -108,7 +105,6 @@ class User:
         self.username = username
         self.password = password
         self.cookie_id = str(random.randint(1,1000000000))
-        self.expires = time.time() + int(settings['auth_cookie_expiration'])
         self.token = token
 
     def regen_cookie_id(self):

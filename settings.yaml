@@ -10,12 +10,9 @@ quickactions:
 modules:
     - name: tvremote
       options:
-        slideshow_dir: /raid/shares/ccc/TV Media/Images
-        local_path: /share/TV Media/Images
         tgt: 'tv-*'
         streams:
             - title: ProPresenter Stream
               url: 'http://sshow.ccc.local:8081/camera.ts'
 
-auth_cookie_expiration: 86400
 eauth: pam
