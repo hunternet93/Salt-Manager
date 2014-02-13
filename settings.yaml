@@ -3,13 +3,15 @@ quickactions:
       fun: system.reboot
     - title: Reload
       fun: service.restart
-      arg: lightdm
+      arg: ['lightdm']
+    - title: Shutdown
+      fun: system.halt
 
 modules:
     - name: tvremote
       options:
-        slideshow_dir: /home/hunter/Photos/
-        local_path: /home/hunter/Photos
+        slideshow_dir: /raid/shares/ccc/TV Media/Images
+        local_path: /share/TV Media/Images
         tgt: 'tv-*'
         streams:
             - title: ProPresenter Stream

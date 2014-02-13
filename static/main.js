@@ -33,17 +33,16 @@ function list_keys(data, status) {
 
 function list_modules(data, status) {
     var modules_template = Handlebars.compile( $('#modules-template').html() );
-    $('#moduleslist').html(modules_template(data));
-    $('#moduleslist').listview('refresh');
+    $('#mainlist').append(modules_template(data));
+    $('#mainlist').listview('refresh');
 }
 
 function run_command(tgt, fun, arg) { $.post('/ajax/runcommand', {'tgt': tgt, 'fun': fun, 'arg': JSON.stringify(arg)}) }
 
-function load_settings(data, status) { settings = data; }
+function load_settings(data, status) { settings = data; $.get('/ajax/listmodules', list_modules);}
 
 $(document).ready(function() {
     $.get('/ajax/settings', load_settings);
     $(document).on("pageinit", "#minions", function() { $.get("/ajax/listminions", list_minions); } );
     $(document).on("pageinit", "#keys", function() { $.get("/ajax/listkeys", list_keys); } );
-    $(document).on("pageinit", "#modules", function() { $.get("/ajax/listmodules", list_modules); } );
 });

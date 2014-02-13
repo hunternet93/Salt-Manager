@@ -1,5 +1,7 @@
 import web, random, salt.client.api, time, json, yaml, sys, importlib
 
+# TODO: Fix key accept/reject giving 0 arguments error
+
 class Bunch(dict):
     """This is a basic generic object that the App object will use for named modules, i.e. app.modules.test
        Copied from: http://code.activestate.com/recipes/52308-the-simple-but-handy-collector-of-a-bunch-of-named/?in=user-97991#c4"""
@@ -202,6 +204,7 @@ class RunCommand:
         if not user: return web.seeother('/login')
 
         data = web.input()
+        print('running command:', {'mode': 'sync', 'timeout': 30.0, 'tgt': data['tgt'], 'fun': data['fun'], 'arg': json.loads(data['arg']), 'token': user.token})
         try:
             result = app.salt.run({'mode': 'sync', 'timeout': 30.0, 'tgt': data['tgt'], 'fun': data['fun'], 'arg': json.loads(data['arg']), 'token': user.token})
             print(result)
