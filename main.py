@@ -62,32 +62,38 @@ class App:
 
     def add_user(self, username, password):
         try:
-            token = self.salt.create_token({'username': username, 'password': password, 'eauth': self.settings['eauth']})['token']
+            tokendict = self.salt.create_token({'username': username, 'password': password, 'eauth': self.settings['eauth']})
         except salt.exceptions.EauthAuthenticationError:
             print('Login error for user:', username)
             return False
 
-        self.users.append(User(username, password, token, self.settings))
+        self.users.append(User(username, password, tokendict, self.settings))
         return self.users[-1]
 
     def check_user(self, cookie_id):
         for user in self.users:
             if cookie_id == user.cookie_id:
                 try:
-                    self.salt.verify_token(user.token)
+                    result = self.salt.verify_token(user.token)
                 except salt.exceptions.EauthAuthenticationError:
                     self.users.remove(user)
                     return False
                 else:
-                    return user
+                    if result:
+                        return user
+                    else:
+                        return False
 
         return False
+
+    def set_key_cookie(self, web, user):
+        web.setcookie('key', user.regen_cookie_id(), user.tokendict.get('expire'), path='/')
 
     def check_cookie(self, web):
         cookie_id = web.cookies().get('key')
         user = self.check_user(cookie_id)
         if user:
-            web.setcookie('key', user.regen_cookie_id(), self.settings['auth_cookie_expiration'], path='/')
+            self.set_key_cookie(web, user)
             return user
         else:
             return False
@@ -101,11 +107,12 @@ class App:
             return False
 
 class User:
-    def __init__(self, username, password, token, settings):
+    def __init__(self, username, password, tokendict, settings):
         self.username = username
         self.password = password
         self.cookie_id = str(random.randint(1,1000000000))
-        self.token = token
+        self.tokendict = tokendict
+        self.token = self.tokendict['token']
 
     def regen_cookie_id(self):
         self.cookie_id = str(random.randint(1,1000000000))
@@ -141,7 +148,7 @@ class Login:
         if not user:
             return render.login('Incorrect username or password')
 
-        web.setcookie('key', user.cookie_id, app.settings['auth_cookie_expiration'], path='/')
+        app.set_key_cookie(web, user)
         return web.seeother('/')
 
 class Settings:
